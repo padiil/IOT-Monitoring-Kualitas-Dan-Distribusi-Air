@@ -3,11 +3,6 @@
 #include <PubSubClient.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-
-// Inisialisasi LCD dengan alamat I2C dan ukuran layar 16x2
-LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // deklarasi fungsi + variabel
 void reconnect();
@@ -16,7 +11,6 @@ String createJSON();
 void saveToDatabase();
 void printData();
 float calculateIPj();
-String setWaterQuality(float IPj);
 
 const char *ssid = "Emmm2";
 const char *password = "emmmtriplem";
@@ -47,13 +41,6 @@ void setup()
 
   // Mengatur server MQTT
   client.setServer(mqtt_server, 1883);
-
-  // Mulai I2C dengan pin default (SDA = GPIO21, SCL = GPIO22)
-  Wire.begin();
-
-  // Inisialisasi LCD dengan ukuran layar 16x2
-  lcd.begin(16, 2);
-  lcd.backlight(); // Aktifkan lampu latar LCD
 }
 
 void loop()
@@ -83,19 +70,6 @@ void loop()
   {
     lastSave = millis(); // Update lastSave sebelum menyimpan
     saveToDatabase();
-  }
-
-  // Update the LCD with the IPj value every second
-  static unsigned long lastLcdUpdate = 0; // Timer for LCD update
-  if (millis() - lastLcdUpdate > 1000)    // Update every 1 second
-  {
-    lastLcdUpdate = millis();
-    float IPj = calculateIPj(); // Calculate IPj
-    lcd.setCursor(0, 0);
-    lcd.print("IPj: ");
-    lcd.print(IPj, 2); // Print IPj value with 2 decimal places
-    lcd.setCursor(0, 1);
-    lcd.print(setWaterQuality(IPj));
   }
 }
 
@@ -127,7 +101,23 @@ String createJSON()
   doc["fosfat"] = fosfat;
   doc["fecal_coliform"] = fecal_coliform;
   doc["IPj"] = IPj;
-  doc["waterQuality"] = setWaterQuality(IPj);
+
+  if (IPj >= 0 && IPj <= 1.0)
+  {
+    doc["waterQuality"] = "baik";
+  }
+  else if (IPj > 1.0 && IPj <= 5.0)
+  {
+    doc["waterQuality"] = "cemar ringan";
+  }
+  else if (IPj > 5.0 && IPj <= 10.0)
+  {
+    doc["waterQuality"] = "cemar sedang";
+  }
+  else if (IPj > 10.0)
+  {
+    doc["waterQuality"] = "cemar berat";
+  }
 
   String json;
   serializeJson(doc, json); // Serialisasi JSON ke string
@@ -157,27 +147,6 @@ float calculateIPj()
   // Menghitung IPj
   float IPj = pow(maxRatio, 2) + pow(avgRatio, 2);
   return IPj;
-}
-
-// Fungsi untuk set waterQuality berdasarkan IPj
-String setWaterQuality(float IPj)
-{
-  if (IPj >= 0 && IPj <= 1.0)
-  {
-    return "baik";
-  }
-  else if (IPj > 1.0 && IPj <= 5.0)
-  {
-    return "cemar ringan";
-  }
-  else if (IPj > 5.0 && IPj <= 10.0)
-  {
-    return "cemar sedang";
-  }
-  else if (IPj > 10.0)
-  {
-    return "cemar berat";
-  }
 }
 
 // Fungsi untuk menyimpan data sensor ke database
