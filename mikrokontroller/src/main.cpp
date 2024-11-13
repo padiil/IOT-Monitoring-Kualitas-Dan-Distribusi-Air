@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <ESP32Servo.h> // Include the ESP32 Servo library
+#include <ESP32Servo.h>
 
 // Initialize LCD with I2C address and 16x2 display size
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -18,7 +18,8 @@ void saveToDatabase();
 void printData();
 float calculateIPj();
 String setWaterQuality(float IPj);
-void controlWaterGates(float IPj); // New function for controlling water gates
+void controlWaterGates(float IPj);
+float getSensorPH();
 
 const char *ssid = "Emmm2";
 const char *password = "emmmtriplem";
@@ -32,13 +33,21 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Parameters for sensor data
-int pH, turbidity, DO, BOD, COD, TSS, nitrat, fosfat, fecal_coliform;
+float pH = 7.0; // Default pH value as float
+int turbidity, DO, BOD, COD, TSS, nitrat, fosfat, fecal_coliform;
 
 // Servo objects and pin definitions for water gates
 Servo communityGateServo;
 Servo treatmentGateServo;
 const int communityGatePin = 33;  // Pin for community gate servo
 const int treatmentGatePin = 32;  // Pin for treatment gate servo
+
+// Pin for pH sensor
+#define PH_SENSOR_PIN 34  // Sesuaikan dengan pin yang Anda pilih
+
+// Nilai PH pada buffer pH 7.0
+const float TeganganPH7 = 2.65;  // Tegangan yang Anda ukur pada pH 7.0 (gunakan pH air mineral sebagai acuan)
+const float PHStep = 0.17;      // PH step yang sudah dihitung sebelumnya
 
 void setup()
 {
@@ -121,7 +130,8 @@ void loop()
 // Function to generate random sensor data (dummy data)
 void generateSensorData()
 {
-  pH = random(5, 9);
+  pH = getSensorPH();
+  turbidity = random(5, 100);
   DO = random(5, 10);
   BOD = random(2, 6);
   COD = random(10, 20);
@@ -264,6 +274,7 @@ void reconnect()
   }
 }
 
+// Function to print sensor data to Serial Monitor
 void printData()
 {
   Serial.println("pH: " + String(pH));
@@ -274,6 +285,21 @@ void printData()
   Serial.println("Nitrat: " + String(nitrat));
   Serial.println("Fosfat: " + String(fosfat));
   Serial.println("Fecal Coliform: " + String(fecal_coliform));
-  Serial.println("IPj: " + String(calculateIPj()));
+  Serial.println("IPj: " + String(calculateIPj(), 2));
   Serial.println();
+}
+
+// Function to get pH from sensor (now returning float)
+float getSensorPH()
+{
+  int sensorValue = analogRead(PH_SENSOR_PIN);
+  float voltage = sensorValue * (3.3 / 4095.0);  // Convert ADC to voltage
+  float pH = 7.0 + ((TeganganPH7 - voltage) / PHStep); // Calculate pH value
+
+  // Ensure pH is within the range 0 to 14
+  if (pH < 0) pH = 0;
+  if (pH > 14) pH = 14;
+
+  pH = round(pH * 100) / 100.0; // Round to 2 decimal places
+  return pH; // Return as float
 }
