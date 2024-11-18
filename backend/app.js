@@ -13,6 +13,9 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// Koneksi ke MongoDB
+dbConnect; // Pastikan koneksi dijalankan
+
 // Koneksi ke broker MQTT
 const mqttClient = mqtt.connect('mqtt://localhost');
 
@@ -27,11 +30,15 @@ mqttClient.on('connect', () => {
   });
 });
 
+mqttClient.on('error', (err) => {
+  console.error('MQTT connection error:', err);
+});
+
 // Saat menerima pesan dari MQTT
 mqttClient.on('message', (topic, message) => {
   try {
     const data = JSON.parse(message.toString());
-    console.log(`Received data from ${topic}:`, data);
+    // console.log(`Received data from ${topic}:`, data);
     broadcastToWebSocketClients(data);
   } catch (err) {
     console.error('Error parsing MQTT message:', err);
@@ -40,18 +47,63 @@ mqttClient.on('message', (topic, message) => {
 
 // Fungsi untuk mengirim data ke semua klien WebSocket
 const broadcastToWebSocketClients = (data) => {
-  wss.clients.forEach(client => {
+  wss.clients.forEach((client) => {
     if (client.readyState === client.OPEN) {
       client.send(JSON.stringify(data));
     }
   });
 };
 
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+  console.log('New WebSocket connection');
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      console.log('Received from client:', data);
+
+      if (data.type === 'switchUpdate') {
+        console.log(`Updating switch status for sensor: ${data.sensor}, useServer: ${data.useServer}`);
+
+        // Jika useServer adalah false, kita kirimkan nilai sensor yang baru
+        const payload = {
+          useServer: data.useServer,
+        };
+
+        // Jika useServer false, kita kirimkan nilai sensor yang diubah
+        if (!data.useServer && data.sensorValue !== undefined) {
+          payload.sensorValue = data.sensorValue;
+          console.log(`Sensor value to send: ${data.sensorValue}`);
+        }
+
+        // Kirim pembaruan ke MQTT untuk sensor yang relevan
+        mqttClient.publish(
+          `sensor/update/${data.sensor}`,  // Topik untuk ESP32
+          JSON.stringify(payload),  // Mengirim data payload ke MQTT
+          (err) => {
+            if (err) {
+              console.error('Failed to publish switch update to MQTT:', err);
+            } else {
+              console.log(`Switch update for ${data.sensor} sent to MQTT`);
+            }
+          }
+        );
+      }
+    } catch (err) {
+      console.error('Error parsing message from client:', err);
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error('WebSocket client error:', err);
+  });
+});
+
+
+// Middleware
 app.use(cors({ origin: '*' }));
 app.use(express.json());
-
-// Koneksi ke MongoDB
-dbConnect;
 
 // Endpoint untuk cek status server
 app.get('/', (req, res) => {
@@ -69,7 +121,7 @@ app.post('/sensor-data', async (req, res) => {
   }
 });
 
-// Menangani error pada WebSocket
+// Menangani error pada WebSocket server
 wss.on('error', (error) => {
   console.error('WebSocket error:', error);
 });
