@@ -22,10 +22,10 @@ void controlWaterGates(float IPj);
 float getSensorPH();
 void callback(char *topic, byte *payload, unsigned int length);
 
-const char *ssid = "Emmm2";
-const char *password = "emmmtriplem";
-const char *mqtt_server = "192.168.100.187";
-const char *saveToDbUrl = "http://192.168.100.187:3000/sensor-data";
+const char *ssid = "MIMIN KOST";
+const char *password = "17081945";
+const char *mqtt_server = "192.168.18.34";
+const char *saveToDbUrl = "http://192.168.18.34:3000/sensor-data";
 const char *mqttSendTopic = "sensor/data";
 const int realTimeDataInterval = 1000;  // 1 second
 const int saveDataToDbInterval = 30000; // 30 seconds
@@ -293,16 +293,16 @@ String setWaterQuality(float IPj)
 // Function to control water gates based on IPj
 void controlWaterGates(float IPj)
 {
-  if (IPj <= 4.0)
+  if (IPj <= 5.0)
   {
-    communityGateServo.write(90); // Open community gate
-    treatmentGateServo.write(0);  // Close treatment gate
+    communityGateServo.write(90);
+    treatmentGateServo.write(90);
     Serial.println("Water quality is good. Opening community gate.");
   }
   else
   {
-    communityGateServo.write(0);  // Close community gate
-    treatmentGateServo.write(90); // Open treatment gate
+    communityGateServo.write(0);
+    treatmentGateServo.write(0);
     Serial.println("Poor water quality. Redirecting to treatment gate.");
   }
 }
