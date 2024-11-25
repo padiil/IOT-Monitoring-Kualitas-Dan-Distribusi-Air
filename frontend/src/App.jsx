@@ -38,7 +38,7 @@ function App() {
   });
   const [IPjData, setIPjData] = useState([]); // State for storing IPj data
 
-  const IP_SERVER = "192.168.18.34:3000"; // Adjust your server's IP address
+  const IP_SERVER = "192.168.100.187:3000"; // Adjust your server's IP address
   const ws = useRef(null);
 
   // WebSocket logic to receive sensor data

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "mikrokontroller"
+		},
+		{
+			"path": "frontend"
+		},
+		{
+			"path": "backend"
+		}
+	],
+	"settings": {}
+}

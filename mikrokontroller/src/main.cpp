@@ -22,13 +22,13 @@ void controlWaterGates(float IPj);
 float getSensorPH();
 void callback(char *topic, byte *payload, unsigned int length);
 
-const char *ssid = "MIMIN KOST";
-const char *password = "17081945";
-const char *mqtt_server = "192.168.18.34";
-const char *saveToDbUrl = "http://192.168.18.34:3000/sensor-data";
+const char *ssid = "Emmm2";
+const char *password = "emmmtriplem";
+const char *mqtt_server = "192.168.100.187";
+const char *saveToDbUrl = "http://192.168.100.187:3000/sensor-data";
 const char *mqttSendTopic = "sensor/data";
-const int realTimeDataInterval = 1000;  // 1 second
-const int saveDataToDbInterval = 30000; // 30 seconds
+const int realTimeDataInterval = 1000; // 1 second
+const int saveDataToDbInterval = 1000; // 1 seconds
 
 const int mqttPort = 1883;
 const char *mqttAcceptTopics[] = { // Daftar topik untuk berbagai sensor
@@ -149,12 +149,12 @@ void loop()
   }
 
   // Save sensor data to database every saveDataToDbInterval
-  static unsigned long lastSave = 0;
-  if (millis() - lastSave > saveDataToDbInterval)
-  {
-    lastSave = millis();
-    saveToDatabase();
-  }
+  // static unsigned long lastSave = 0;
+  // if (millis() - lastSave > saveDataToDbInterval)
+  // {
+  //   lastSave = millis();
+  //   saveToDatabase();
+  // }
 
   // Update LCD with IPj value every second
   static unsigned long lastLcdUpdate = 0; // Timer for LCD update
@@ -317,7 +317,7 @@ void saveToDatabase()
   if (WiFi.status() == WL_CONNECTED)
   {
     HTTPClient http;
-    http.begin(saveToDbUrl);
+    http.begin(saveToDbUrl); // URL server
     http.addHeader("Content-Type", "application/json");
 
     int httpResponseCode = http.POST(jsonData);
@@ -325,7 +325,7 @@ void saveToDatabase()
     if (httpResponseCode > 0)
     {
       String response = http.getString();
-      Serial.println("Response from server: " + response);
+      Serial.println("Response from server: " + response); // Show server response
     }
     else
     {
