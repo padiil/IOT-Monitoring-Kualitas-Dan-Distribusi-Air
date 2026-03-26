@@ -45,11 +45,12 @@ mqttClient.on('error', (err) => {
 mqttClient.on('message', async (topic, message) => {
   try {
     const data = JSON.parse(message.toString());
-    // console.log(`Received data from ${topic}:`, data);
+    console.log(`Received data from ${topic}`);
 
     // Simpan data ke MongoDB
     const newSensorData = new RealTimeData(data);
-    await newSensorData.save();
+    const saved = await newSensorData.save();
+    console.log(`Saved realtime_data with id: ${saved._id}`);
 
     // Kirim data ke klien WebSocket
     broadcastToWebSocketClients(data);

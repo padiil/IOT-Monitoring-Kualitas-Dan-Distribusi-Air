@@ -89,7 +89,7 @@ const float PHStep = 0.17;      // PH step yang sudah dihitung sebelumnya
 
 void setup()
 {
-  Serial.begin(115200);       // Start serial communication
+  Serial.begin(115200); // Start serial communication
   mqttClientId = "ESP32Client-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
   WiFi.begin(ssid, password); // Connect to Wi-Fi
 
@@ -155,9 +155,12 @@ void loop()
     lastMsg = millis();
     generateSensorData();
     String data = createJSON();
-    if (client.publish(mqttSendTopic, data.c_str())) {
+    if (client.publish(mqttSendTopic, data.c_str()))
+    {
       Serial.println("Real-time data sent:");
-    } else {
+    }
+    else
+    {
       Serial.println("Gagal publish real-time data (MQTT disconnected).");
     }
     printData();
@@ -311,13 +314,13 @@ void controlWaterGates(float IPj)
 {
   if (IPj <= 5.0)
   {
-    communityGateServo.write(90); // Buka jalur komunitas
+    communityGateServo.write(90); // Buka jalur distribusi
     treatmentGateServo.write(0);  // Tutup jalur treatment
     Serial.println("Water quality is good. Community gate OPEN, treatment gate CLOSED.");
   }
   else
   {
-    communityGateServo.write(0);  // Tutup jalur komunitas
+    communityGateServo.write(0);  // Tutup jalur distribusi
     treatmentGateServo.write(90); // Buka jalur treatment
     Serial.println("Poor water quality. Community gate CLOSED, treatment gate OPEN.");
   }

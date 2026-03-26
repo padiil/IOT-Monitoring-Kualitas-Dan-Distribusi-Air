@@ -1,81 +1,92 @@
-## ESP32 Wokwi Simulator on Visual Studio Code X Platformio
+# Mikrokontroler (ESP32 + PlatformIO)
 
-[Wokwi](https://wokwi.com/) adalah salah satu platform online simulator berbasis website yang mana kita bisa menjalankan simulasi mikrokontroller(Arduino, ESP32, dll) didalamnya. Wokwi cocok untuk tujuan belajar karena penggunaannya simple dengan interface yang mudah dimengerti.
+Firmware utama berada di `src/main.cpp`.
 
----
+Fungsi utama firmware saat ini:
 
-## Persiapan Project
+1. Baca/simulasi parameter kualitas air.
+2. Hitung `IPj` dan klasifikasi kualitas air.
+3. Publish data ke MQTT topic `sensor/data` setiap 1 detik.
+4. Subscribe topic kontrol `sensor/update/<sensor>` untuk mode manual/server.
+5. Tampilkan status di LCD 16x2.
+6. Kontrol 2 servo pintu air berdasarkan IPj.
 
-- Install plugin `Wokwi Simulator` di Visual Studio Code
-- Buat project baru di Platformio
-- Buat file baru dengan nama `wokwi.toml` dan `diagram.json` didalam direktori project.
-- Buka file `wokwi.toml` lalu tulis kode berikut:
+## Board & Library
 
-```java
-[wokwi]
-version = 1
-firmware = 'path-to-your-firmware.hex'
-elf = 'path-to-your-firmware.elf'
+- Board: `esp32doit-devkit-v1`
+- Framework: Arduino
+- Dependensi utama:
+  - `PubSubClient`
+  - `ArduinoJson`
+  - `LiquidCrystal_I2C`
+  - `ESP32Servo`
+
+## Setup Credential dan Endpoint
+
+1. Copy file:
+
+```bash
+cp include/secrets.h.example include/secrets.h
 ```
 
----
+2. Isi nilai sesuai jaringan lokal:
 
-## Integrasi VSCode dengan Wokwi
+- `WIFI_SSID`
+- `WIFI_PASSWORD`
+- `MQTT_SERVER`
+- `TOPIC` (default: `sensor/data`)
+- `SAVE_TO_DB_URL`
 
-- Pastikan sudah mendaftar akun di Wokwi
-- Buka `Command Pallete` di VSCode atau tekan `CTRL-SHIFT-P`.
-- Ketik `Wokwi:` lalu pilih yang `Wokwi:Request a New License`.
-- Akan muncul pop-up klik saja `open` selanjutnya akan otomatis membuka browser.
-- Didalam browser klik `GET YOUR LICENSE` maka akan muncul token, copy token tersebut.
-- Akan ada pop-up di browser, klik `Open Visual Studio Code` maka proses instalasi license akan otomatis.
-- Jika tidak maka bisa dilakukan secara manual dengan cara:
-  - Buka `Command Pallete` atau tekan `CTRL-SHIFT-P`.
-  - Ketik `Wokwi:` lalu pilih `Wokwi:Manual Enter License Key`.
-  - Paste token yang sudah didapat lalu ENTER.
+> Catatan: `SAVE_TO_DB_URL` ada untuk fungsi HTTP `saveToDatabase()`, tapi default-nya belum dipanggil di loop utama.
 
----
+## Compile, Upload, Monitor
 
-## Create Project
+```bash
+pio run
+pio run -t upload
+pio device monitor
+```
 
-- Wokwi
-  - Buat project baru di Wokwi.
-  - Buat diagram atau skematiknya dulu.
-  - Buka tab `diagram.json` lalu copy semua programnya.
-- VSCode
-  - Buka file `diagram.json` yang sudah dibuat sebelumnya lalu paste.
-  - lakukan Verify program terlebih dahulu jika belum untuk mengetahui direktori firmware project.
-  - Buka file `wokwi.toml` yang sudah dibuat sebelumnya.
-    - Secara default struktur kodenya seperti ini:
-    ```java
-    [wokwi]
-    version = 1
-    firmware = 'path-to-your-firmware.hex'
-    elf = 'path-to-your-firmware.elf'
-    ```
-    - Fokus pada `firmware` dan `elf`. Disini perlu diisi direktori firmware dari project yang sedang dibuat.
-    - Untuk mengetahui direktori tersebut, pada folder project masuk ke dalam folder `.pio/bulid/board yang dipakai`. didalamnya akan ada file `firmware.bin` dan `firmware.elf`.
-    - Ubah file `wokwi.toml` kurang lebih menjadi seperti berikut:
-    ```java
-    [wokwi]
-    version = 1
-    firmware = '.pio\build\esp32doit-devkit-v1\firmware.bin'
-    elf = '.pio\build\esp32doit-devkit-v1\firmware.elf'
-    ```
-    - Pada `esp32doit-devkit-v1` ini adalah board yang dipakai, ini mungkin berbeda tergantung board yang digunakan jadi tidak harus selalu sama.
+## Topic MQTT
 
----
+### Publish data sensor
 
-## Run Project
+- Topic: `sensor/data`
+- Payload berisi: `pH`, `DO`, `BOD`, `COD`, `TSS`, `nitrat`, `fosfat`, `fecal_coliform`, `IPj`, `waterQuality`
 
-- Setelah dirasa semuanya sudah benar kemudian lakukan Verify lagi untuk me-refrseh firmware yang ada sebelumnya.
-- Buka `Command Pallete` atau tekan `CTRL-SHIFT-P`.
-- Ketik `Wokwi:` lalu pilih `Wokwi: Start Simulator`.
+### Subscribe kontrol dari dashboard
 
----
+- `sensor/update/pH`
+- `sensor/update/DO`
+- `sensor/update/BOD`
+- `sensor/update/COD`
+- `sensor/update/TSS`
+- `sensor/update/nitrat`
+- `sensor/update/fosfat`
+- `sensor/update/fecal_coliform`
 
-## Note!
+Payload kontrol:
 
-- Setiap License umumnya hanya berlaku selama satu bulan.
-- Untuk selengkapnya bisa baca langsung dokumentasi dari Wokwi - [Documentation](https://docs.wokwi.com/vscode/getting-started)
+```json
+{ "useServer": false, "sensorValue": 7.5 }
+```
 
----
+Arti:
+
+- `useServer: true` -> ESP32 pakai pembacaan sensor lokal
+- `useServer: false` -> ESP32 pakai nilai manual `sensorValue`
+
+## Ringkas Pin yang Dipakai
+
+- Servo pintu distribusi: GPIO `18`
+- Servo pintu treatment: GPIO `19`
+- pH sensor: GPIO `34`
+- DO sensor: GPIO `35`
+- BOD sensor: GPIO `32`
+- TSS sensor: GPIO `33`
+- Sensor tambahan (mapping COD): GPIO `39`
+
+## Wokwi (Opsional)
+
+File `diagram.json` dan `wokwi.toml` tetap bisa dipakai untuk simulasi.
+Pastikan path firmware di `wokwi.toml` mengarah ke hasil build terbaru.

@@ -47,9 +47,7 @@ const calculateProcess = async () => {
 
         await longTermData.save();
 
-        // Optionally, you can clear the processed data from RealTimeData after saving
-        await RealTimeData.deleteMany({});
-        console.log('Real-time data cleared successfully and Long-term data saved successfully');
+        console.log('Long-term data saved successfully');
 
     } catch (err) {
         console.error('Error fetching or processing data:', err);

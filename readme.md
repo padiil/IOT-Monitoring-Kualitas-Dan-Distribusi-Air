@@ -1,66 +1,146 @@
- # Project Monitoring Kualitas Air
+# IoT Monitoring Kualitas dan Distribusi Air
 
- Proyek ini adalah sistem monitoring kualitas air menggunakan ESP32 yang terhubung dengan Wi-Fi, frontend berbasis React dengan Vite, dan backend menggunakan Express.js. Proyek ini mengumpulkan data parameter kualitas air seperti pH, DO, BOD, COD, TSS, nitrat, fosfat, dan fecal coliform, dan mengirim data ini ke server serta menyimpannya dalam database.
+Sistem ini memonitor kualitas air secara real-time menggunakan ESP32, MQTT, backend Node.js, MongoDB, dan dashboard React.
 
- ## Struktur Folder
- Struktur direktori proyek ini adalah sebagai berikut:
- ```
- - mikrokontroller/   # Proyek mikrokontroler dengan PlatformIO
- - frontend/          # Frontend berbasis Vite dan React
- - backend/           # Backend menggunakan Express.js
- ```
+## Ringkasan Arsitektur (Versi Terbaru)
 
- ## Cara Instalasi
- Untuk menjalankan proyek ini, ikuti langkah-langkah di bawah ini:
+1. ESP32 membaca/simulasi data sensor: `pH`, `DO`, `BOD`, `COD`, `TSS`, `nitrat`, `fosfat`, `fecal_coliform`.
+2. ESP32 menghitung `IPj`, lalu publish payload ke topic MQTT `sensor/data` setiap 1 detik.
+3. Backend subscribe `sensor/data`, simpan ke MongoDB collection time-series `realtime_data`, lalu broadcast ke semua client WebSocket.
+4. Frontend menerima data lewat WebSocket, menghitung IPj aktif (mode server/manual), menampilkan chart dan status kualitas air.
+5. Dari frontend, perubahan mode/nilai manual dikirim via WebSocket ke backend, lalu backend publish ke topic kontrol `sensor/update/<sensor>` untuk ESP32.
 
- ### 1. Mikrokontroler (PlatformIO)
- Masuk ke folder `mikrokontroller` untuk menginstal dependensi dan mengonfigurasi PlatformIO:
- ```bash
- cd mikrokontroller
- pio lib install            # Menginstal library yang diperlukan
- pio run -t upload          # Meng-compile dan meng-upload kode ke ESP32
- ```
+## Struktur Folder
 
- ### 2. Backend (Express.js)
- Masuk ke folder `backend` untuk menginstal dependensi backend:
- ```bash
- cd backend
- npm install                # Menginstal library yang diperlukan
- npm start                  # Menjalankan server Express.js
- ```
+```
+backend/         # Express + MQTT + WebSocket + MongoDB
+frontend/        # React + Vite + Tailwind + Recharts
+mikrokontroller/ # PlatformIO (ESP32)
+mosquitto.conf   # Konfigurasi broker MQTT lokal
+```
 
- Server akan berjalan di port 3000. Jika diperlukan, ubah alamat IP di kode frontend atau mikrokontroler agar sesuai dengan alamat IP komputer.
+## Prasyarat
 
- ### 3. Frontend (React + Vite)
- Masuk ke folder `frontend` untuk menginstal dependensi frontend:
- ```bash
- cd frontend
- npm install                # Menginstal library yang diperlukan
- npm run dev                # Menjalankan server pengembangan Vite
- ```
+- Node.js 18+
+- npm
+- MongoDB 6+ (disarankan)
+- Mosquitto MQTT broker (atau broker MQTT lain)
+- PlatformIO (untuk upload firmware ESP32)
 
- Frontend akan berjalan di port 5173. Anda dapat mengakses aplikasi di `http://localhost:5173`.
+## Menjalankan Sistem (Local Development)
 
- ## Konfigurasi
- Beberapa konfigurasi penting dalam proyek ini:
- - **IP Server**: Ubah variabel `IP_SERVER` di frontend dan alamat `mqtt_server` di kode mikrokontroler agar sesuai dengan alamat IP dari backend.
- - **Interval Pengiriman Data**: Pengiriman data real-time dikonfigurasi dengan interval 1 detik, dan penyimpanan ke database diatur setiap 30 detik. Kamu bisa mengubah interval ini di kode mikrokontroler.
+### 1) Jalankan broker MQTT
 
- ## Arsitektur Proyek
- - **ESP32**: Mengumpulkan data dari sensor kualitas air secara acak (dummy data) dan mengirimnya melalui MQTT ke backend, serta menyimpan data JSON menggunakan HTTP.
- - **Backend (Express.js)**: Menangani koneksi MQTT, menerima data JSON, dan menyimpannya ke database.
- - **Frontend (React + Vite)**: Menampilkan data kualitas air secara real-time dari server menggunakan WebSocket.
+Contoh dengan konfigurasi yang ada di `mosquitto.conf`:
 
- ## Teknologi yang Digunakan
- - **PlatformIO**: Untuk pengembangan kode mikrokontroler
- - **Express.js**: Backend server untuk menerima dan menyimpan data sensor
- - **MongoDB**: Database untuk menyimpan data kualitas air 
- - **React**: Frontend untuk monitoring data kualitas air secara real-time
- - **WebSocket**: Untuk mengirim data dari backend ke frontend
- - **MQTT**: Protokol komunikasi antara mikrokontroler dan server backend
+- Listener: `1883`
+- `allow_anonymous true`
 
- ## Cara Kerja
- 1. **ESP32** mengumpulkan data kualitas air secara acak dan menghitung indeks kualitas air (IPj).
- 2. Data dikirim ke server **Express.js** melalui MQTT dan disimpan dalam database.
- 3. Server mengirim data terbaru ke **frontend React** melalui WebSocket.
- 4. **Frontend React** menampilkan data kualitas air dan statusnya sesuai dengan nilai IPj.
+### 2) Jalankan backend
+
+```bash
+cd backend
+npm install
+node app.js
+```
+
+Backend default berjalan di `http://localhost:3000`.
+
+### 3) Jalankan frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend default berjalan di `http://localhost:5173`.
+
+### 4) Upload firmware ESP32 (opsional untuk device nyata)
+
+```bash
+cd mikrokontroller
+pio run -t upload
+pio device monitor
+```
+
+## Konfigurasi Environment
+
+### Backend (`backend/.env`)
+
+Variabel yang dipakai:
+
+- `PORT` (default: `3000`)
+- `MQTT_BROKER` (default: `mqtt://localhost`)
+- `MQTT_TOPIC` (default: `sensor/data`)
+- `MONGODB_URI` (default: `mongodb://127.0.0.1:27017/IOT_Monitoring_Kualitas_Dan_Distribusi_Air`)
+- `REALTIME_COLLECTION` (default: `realtime_data`)
+- `REALTIME_TTL_SECONDS` (default: `86400` / 24 jam)
+
+### Frontend (`frontend/.env`)
+
+- `VITE_WS_URL` (default: `ws://localhost:3000`)
+
+### Mikrokontroler (`mikrokontroller/include/secrets.h`)
+
+Salin dari `mikrokontroller/include/secrets.h.example`, lalu isi:
+
+- `WIFI_SSID`
+- `WIFI_PASSWORD`
+- `MQTT_SERVER`
+- `TOPIC` (umumnya `sensor/data`)
+- `SAVE_TO_DB_URL` (saat ini tidak dipakai aktif di loop utama)
+
+## Format Payload MQTT
+
+### Data sensor (ESP32 -> backend)
+
+Topic: `sensor/data`
+
+```json
+{
+	"pH": 7.12,
+	"DO": 8,
+	"BOD": 4,
+	"COD": 13,
+	"TSS": 120,
+	"nitrat": 5,
+	"fosfat": 2,
+	"fecal_coliform": 180,
+	"IPj": 3.21,
+	"waterQuality": "cemar ringan"
+}
+```
+
+### Kontrol sensor (frontend -> backend -> ESP32)
+
+Topic: `sensor/update/<sensor>`
+
+Payload:
+
+- `useServer: true` -> gunakan bacaan sensor lokal ESP32
+- `useServer: false` + `sensorValue` -> gunakan nilai manual dari dashboard
+
+Contoh:
+
+```json
+{ "useServer": false, "sensorValue": 9.5 }
+```
+
+## Database
+
+- `realtime_data`: collection time-series + TTL (default 24 jam)
+- `longterm_data`: ringkasan periodik (avg/max/min)
+
+Catatan: proses agregasi berjalan setiap menit dan mengambil 60 data terakhir dari `realtime_data`.
+
+## Endpoint dan Komunikasi
+
+- HTTP health check: `GET /` -> `WebSocket and MQTT server is running!`
+- WebSocket: 1 channel yang sama dengan server backend (`ws://host:3000`)
+
+## Catatan Penting
+
+- Dokumentasi ini sudah disesuaikan dengan kode saat ini (Maret 2026).
+- `npm start` belum didefinisikan di backend; gunakan `node app.js`.
+- Pengiriman HTTP dari ESP32 ke endpoint `/sensor-data` masih ada di fungsi, tetapi default-nya tidak dipanggil di loop utama.
