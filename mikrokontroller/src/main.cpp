@@ -7,6 +7,16 @@
 #include <LiquidCrystal_I2C.h>
 #include <ESP32Servo.h>
 
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#define WIFI_SSID "REPLACE_WITH_WIFI_SSID"
+#define WIFI_PASSWORD "REPLACE_WITH_WIFI_PASSWORD"
+#define MQTT_SERVER "127.0.0.1"
+#define TOPIC "sensor/data"
+#define SAVE_TO_DB_URL "http://127.0.0.1:3000/sensor-data"
+#endif
+
 // Initialize LCD with I2C address and 16x2 display size
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -22,11 +32,11 @@ void controlWaterGates(float IPj);
 float getSensorPH();
 void callback(char *topic, byte *payload, unsigned int length);
 
-const char *ssid = "Emmm2";
-const char *password = "emmmtriplem";
-const char *mqtt_server = "192.168.100.187";
-const char *saveToDbUrl = "http://192.168.100.187:3000/sensor-data";
-const char *mqttSendTopic = "sensor/data";
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
+const char *mqtt_server = MQTT_SERVER;
+const char *saveToDbUrl = SAVE_TO_DB_URL;
+const char *mqttSendTopic = TOPIC;
 const int realTimeDataInterval = 1000; // 1 second
 const int saveDataToDbInterval = 1000; // 1 seconds
 
@@ -288,6 +298,7 @@ String setWaterQuality(float IPj)
   {
     return "cemar berat";
   }
+  return "tidak diketahui";
 }
 
 // Function to control water gates based on IPj
@@ -394,7 +405,7 @@ float getSensorPH()
 void callback(char *topic, byte *payload, unsigned int length)
 {
   // Parsing JSON
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, payload, length);
   if (error)
   {

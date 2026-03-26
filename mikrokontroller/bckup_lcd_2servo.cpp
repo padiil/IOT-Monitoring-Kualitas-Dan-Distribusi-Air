@@ -7,6 +7,16 @@
 #include <LiquidCrystal_I2C.h>
 #include <ESP32Servo.h> // Include the ESP32 Servo library
 
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#define WIFI_SSID "REPLACE_WITH_WIFI_SSID"
+#define WIFI_PASSWORD "REPLACE_WITH_WIFI_PASSWORD"
+#define MQTT_SERVER "127.0.0.1"
+#define SAVE_TO_DB_URL "http://127.0.0.1:3000/sensor-data"
+#define TOPIC "sensor/data"
+#endif
+
 // Initialize LCD with I2C address and 16x2 display size
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -20,11 +30,11 @@ float calculateIPj();
 String setWaterQuality(float IPj);
 void controlWaterGates(float IPj); // New function for controlling water gates
 
-const char *ssid = "Emmm2";
-const char *password = "emmmtriplem";
-const char *mqtt_server = "192.168.100.187";
-const char *saveToDbUrl = "http://192.168.100.187:3000/sensor-data";
-const char *topic = "sensor/data";
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
+const char *mqtt_server = MQTT_SERVER;
+const char *saveToDbUrl = SAVE_TO_DB_URL;
+const char *topic = TOPIC;
 const int realTimeDataInterval = 1000;  // 1 second
 const int saveDataToDbInterval = 30000; // 30 seconds
 
@@ -37,8 +47,8 @@ int pH, turbidity, DO, BOD, COD, TSS, nitrat, fosfat, fecal_coliform;
 // Servo objects and pin definitions for water gates
 Servo communityGateServo;
 Servo treatmentGateServo;
-const int communityGatePin = 33;  // Pin for community gate servo
-const int treatmentGatePin = 32;  // Pin for treatment gate servo
+const int communityGatePin = 33; // Pin for community gate servo
+const int treatmentGatePin = 32; // Pin for treatment gate servo
 
 void setup()
 {
@@ -68,8 +78,8 @@ void setup()
   treatmentGateServo.attach(treatmentGatePin);
 
   // Set initial positions (closed)
-  communityGateServo.write(0);  // Closed position
-  treatmentGateServo.write(0);  // Closed position
+  communityGateServo.write(0); // Closed position
+  treatmentGateServo.write(0); // Closed position
 }
 
 void loop()

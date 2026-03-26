@@ -1,15 +1,16 @@
+import 'dotenv/config';
 import cors from 'cors';
 import http from 'http';
 import mqtt from 'mqtt';
 import express from 'express';
 import { WebSocketServer } from 'ws';
-import { RealTimeData } from './db/models/SensorData.model.js';
 import dbConnect from './db/DbConnect.js';
 import processLongTermData from './db/dataProcess.js';
+import { RealTimeData } from './db/models/SensorData.model.js';
 
-const PORT = 3000;
-const MQTT_BROKER = 'mqtt://localhost';
-const MQTT_TOPIC = 'sensor/data';
+const PORT = Number(process.env.PORT || 3000);
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://localhost';
+const MQTT_TOPIC = process.env.MQTT_TOPIC || 'sensor/data';
 
 const app = express();
 const server = http.createServer(app);
@@ -76,7 +77,9 @@ wss.on('connection', (ws) => {
       console.log('Received from client:', data);
 
       if (data.type === 'switchUpdate') {
-        console.log(`Updating switch status for sensor: ${data.sensor}, useServer: ${data.useServer}`);
+        console.log(
+          `Updating switch status for sensor: ${data.sensor}, useServer: ${data.useServer}`,
+        );
 
         const payload = { useServer: data.useServer };
 
@@ -96,7 +99,7 @@ wss.on('connection', (ws) => {
             } else {
               console.log(`Switch update for ${data.sensor} sent to MQTT`);
             }
-          }
+          },
         );
       }
     } catch (err) {

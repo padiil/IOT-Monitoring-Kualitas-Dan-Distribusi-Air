@@ -2,32 +2,41 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#define WIFI_SSID "REPLACE_WITH_WIFI_SSID"
+#define WIFI_PASSWORD "REPLACE_WITH_WIFI_PASSWORD"
+#define MQTT_SERVER "127.0.0.1"
+#endif
+
 // Konfigurasi WiFi
-const char* ssid = "Emmm2";
-const char* password = "emmmtriplem";
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
 
 // Konfigurasi MQTT
-const char* mqttServer = "192.168.100.187"; // Ganti dengan IP server MQTT Anda
+const char *mqttServer = MQTT_SERVER; // Ganti dengan IP server MQTT Anda
 const int mqttPort = 1883;
-const char* mqttTopics[] = { // Daftar topik untuk berbagai sensor
-  "sensor/update/pH",
-  "sensor/update/DO",
-  "sensor/update/BOD",
-  "sensor/update/COD",
-  "sensor/update/TSS",
-  "sensor/update/nitrat",
-  "sensor/update/fosfat",
-  "sensor/update/fecal_coliform"
-};
+const char *mqttTopics[] = { // Daftar topik untuk berbagai sensor
+    "sensor/update/pH",
+    "sensor/update/DO",
+    "sensor/update/BOD",
+    "sensor/update/COD",
+    "sensor/update/TSS",
+    "sensor/update/nitrat",
+    "sensor/update/fosfat",
+    "sensor/update/fecal_coliform"};
 const int numTopics = sizeof(mqttTopics) / sizeof(mqttTopics[0]);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void setupWiFi() {
+void setupWiFi()
+{
   Serial.print("Menghubungkan ke WiFi");
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
@@ -36,14 +45,16 @@ void setupWiFi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char *topic, byte *payload, unsigned int length)
+{
   Serial.print("Pesan diterima di topik: ");
   Serial.println(topic);
 
   // Parsing JSON
   StaticJsonDocument<256> doc;
   DeserializationError error = deserializeJson(doc, payload, length);
-  if (error) {
+  if (error)
+  {
     Serial.print("Gagal mem-parsing JSON: ");
     Serial.println(error.c_str());
     return;
@@ -52,7 +63,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // Mendapatkan nilai dari JSON
   bool useServer = doc["useServer"];
   float sensorValue = doc["sensorValue"];
-  
+
   // Menampilkan data ke serial monitor
   Serial.println("Data diterima:");
   Serial.print("useServer: ");
@@ -62,20 +73,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // Tindakan berdasarkan data
   String sensorName = String(topic).substring(String(topic).lastIndexOf('/') + 1); // Nama sensor dari topik
-  if (!useServer) {
+  if (!useServer)
+  {
     Serial.print("Mengatur sensor ");
     Serial.print(sensorName);
     Serial.print(" secara manual dengan nilai: ");
     Serial.println(sensorValue);
     // Lakukan tindakan sesuai sensorValue
     // Misalnya: atur aktuator, relay, atau LED
-  } else {
+  }
+  else
+  {
     Serial.print("Mode server aktif untuk sensor ");
     Serial.println(sensorName);
   }
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   setupWiFi();
 
@@ -83,17 +98,22 @@ void setup() {
   client.setCallback(callback);
 
   // Menghubungkan ke MQTT
-  while (!client.connected()) {
+  while (!client.connected())
+  {
     Serial.print("Menghubungkan ke MQTT...");
-    if (client.connect("ESP32Client")) {
+    if (client.connect("ESP32Client"))
+    {
       Serial.println("Terhubung!");
       // Subscribing ke semua topik
-      for (int i = 0; i < numTopics; i++) {
+      for (int i = 0; i < numTopics; i++)
+      {
         client.subscribe(mqttTopics[i]);
         Serial.print("Subscribed ke topik: ");
         Serial.println(mqttTopics[i]);
       }
-    } else {
+    }
+    else
+    {
       Serial.print("Gagal terhubung. Kesalahan: ");
       Serial.println(client.state());
       delay(2000);
@@ -101,6 +121,7 @@ void setup() {
   }
 }
 
-void loop() {
+void loop()
+{
   client.loop();
 }

@@ -4,6 +4,16 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
+#if __has_include("secrets.h")
+#include "secrets.h"
+#else
+#define WIFI_SSID "REPLACE_WITH_WIFI_SSID"
+#define WIFI_PASSWORD "REPLACE_WITH_WIFI_PASSWORD"
+#define MQTT_SERVER "127.0.0.1"
+#define SAVE_TO_DB_URL "http://127.0.0.1:3000/sensor-data"
+#define TOPIC "sensor/data"
+#endif
+
 // deklarasi fungsi + variabel
 void reconnect();
 void generateSensorData();
@@ -12,11 +22,11 @@ void saveToDatabase();
 void printData();
 float calculateIPj();
 
-const char *ssid = "Emmm2";
-const char *password = "emmmtriplem";
-const char *mqtt_server = "192.168.100.187";
-const char *saveToDbUrl = "http://192.168.100.187:3000/sensor-data";
-const char *topic = "sensor/data";
+const char *ssid = WIFI_SSID;
+const char *password = WIFI_PASSWORD;
+const char *mqtt_server = MQTT_SERVER;
+const char *saveToDbUrl = SAVE_TO_DB_URL;
+const char *topic = TOPIC;
 const int realTimeDataInterval = 1000;  // 1 detik
 const int saveDataToDbInterval = 30000; // 30 detik
 
