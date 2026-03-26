@@ -30,6 +30,8 @@ float calculateIPj();
 String setWaterQuality(float IPj);
 void controlWaterGates(float IPj);
 float getSensorPH();
+int readMappedSensor(int pin, int outMin, int outMax);
+void subscribeControlTopics();
 void callback(char *topic, byte *payload, unsigned int length);
 
 const char *ssid = WIFI_SSID;
@@ -39,6 +41,7 @@ const char *saveToDbUrl = SAVE_TO_DB_URL;
 const char *mqttSendTopic = TOPIC;
 const int realTimeDataInterval = 1000; // 1 second
 const int saveDataToDbInterval = 1000; // 1 seconds
+String mqttClientId;
 
 const int mqttPort = 1883;
 const char *mqttAcceptTopics[] = { // Daftar topik untuk berbagai sensor
@@ -70,11 +73,15 @@ int turbidity, DO, BOD, COD, TSS, nitrat, fosfat, fecal_coliform;
 // Servo objects and pin definitions for water gates
 Servo communityGateServo;
 Servo treatmentGateServo;
-const int communityGatePin = 33; // Pin for community gate servo
-const int treatmentGatePin = 32; // Pin for treatment gate servo
+const int communityGatePin = 18; // Pin for community gate servo
+const int treatmentGatePin = 19; // Pin for treatment gate servo
 
-// Pin for pH sensor
-#define PH_SENSOR_PIN 34 // Sesuaikan dengan pin yang Anda pilih
+// Pin sensor analog (sinkron dengan diagram Wokwi)
+const int PH_SENSOR_PIN = 34;
+const int DO_SENSOR_PIN = 35;
+const int BOD_SENSOR_PIN = 32;
+const int TSS_SENSOR_PIN = 33;
+const int TEMP_SENSOR_PIN = 39; // ADC1 (pin 4/ADC2 bentrok dengan WiFi)
 
 // Nilai PH pada buffer pH 7.0
 const float TeganganPH7 = 2.65; // Tegangan yang Anda ukur pada pH 7.0 (gunakan pH air mineral sebagai acuan)
@@ -83,6 +90,7 @@ const float PHStep = 0.17;      // PH step yang sudah dihitung sebelumnya
 void setup()
 {
   Serial.begin(115200);       // Start serial communication
+  mqttClientId = "ESP32Client-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFF), HEX);
   WiFi.begin(ssid, password); // Connect to Wi-Fi
 
   // Wait for Wi-Fi connection
@@ -117,16 +125,10 @@ void setup()
   while (!client.connected())
   {
     Serial.print("Menghubungkan ke MQTT...");
-    if (client.connect("ESP32Client"))
+    if (client.connect(mqttClientId.c_str()))
     {
       Serial.println("Terhubung!");
-      // Subscribing ke semua topik
-      for (int i = 0; i < numTopics; i++)
-      {
-        client.subscribe(mqttAcceptTopics[i]);
-        Serial.print("Subscribed ke topik: ");
-        Serial.println(mqttAcceptTopics[i]);
-      }
+      subscribeControlTopics();
     }
     else
     {
@@ -153,8 +155,11 @@ void loop()
     lastMsg = millis();
     generateSensorData();
     String data = createJSON();
-    client.publish(mqttSendTopic, data.c_str());
-    Serial.println("Real-time data sent:");
+    if (client.publish(mqttSendTopic, data.c_str())) {
+      Serial.println("Real-time data sent:");
+    } else {
+      Serial.println("Gagal publish real-time data (MQTT disconnected).");
+    }
     printData();
   }
 
@@ -201,22 +206,22 @@ void generateSensorData()
     pH = serverPH; // Gunakan data dari server pH
 
   if (useServerDO)
-    DO = random(5, 10); // Simulasi data random DO
+    DO = readMappedSensor(DO_SENSOR_PIN, 5, 10); // Baca pot DO (pin 35)
   else
     DO = serverDO; // Gunakan data dari server DO
 
   if (useServerBOD)
-    BOD = random(2, 6); // Simulasi data random BOD
+    BOD = readMappedSensor(BOD_SENSOR_PIN, 2, 6); // Baca pot BOD (pin 32)
   else
     BOD = serverBOD; // Gunakan data dari server BOD
 
   if (useServerCOD)
-    COD = random(10, 20); // Simulasi data random COD
+    COD = readMappedSensor(TEMP_SENSOR_PIN, 10, 20); // Dari pot temperatur (pin 4)
   else
     COD = serverCOD; // Gunakan data dari server COD
 
   if (useServerTSS)
-    TSS = random(50, 200); // Simulasi data random TSS
+    TSS = readMappedSensor(TSS_SENSOR_PIN, 50, 200); // Baca pot TSS (pin 33)
   else
     TSS = serverTSS; // Gunakan data dari server TSS
 
@@ -306,15 +311,15 @@ void controlWaterGates(float IPj)
 {
   if (IPj <= 5.0)
   {
-    communityGateServo.write(90);
-    treatmentGateServo.write(90);
-    Serial.println("Water quality is good. Opening community gate.");
+    communityGateServo.write(90); // Buka jalur komunitas
+    treatmentGateServo.write(0);  // Tutup jalur treatment
+    Serial.println("Water quality is good. Community gate OPEN, treatment gate CLOSED.");
   }
   else
   {
-    communityGateServo.write(0);
-    treatmentGateServo.write(0);
-    Serial.println("Poor water quality. Redirecting to treatment gate.");
+    communityGateServo.write(0);  // Tutup jalur komunitas
+    treatmentGateServo.write(90); // Buka jalur treatment
+    Serial.println("Poor water quality. Community gate CLOSED, treatment gate OPEN.");
   }
 }
 
@@ -356,9 +361,10 @@ void reconnect()
   while (!client.connected())
   {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32Client"))
+    if (client.connect(mqttClientId.c_str()))
     {
       Serial.println("connected");
+      subscribeControlTopics();
     }
     else
     {
@@ -367,6 +373,16 @@ void reconnect()
       Serial.println(" try again in 5 seconds");
       delay(5000);
     }
+  }
+}
+
+void subscribeControlTopics()
+{
+  for (int i = 0; i < numTopics; i++)
+  {
+    client.subscribe(mqttAcceptTopics[i]);
+    Serial.print("Subscribed ke topik: ");
+    Serial.println(mqttAcceptTopics[i]);
   }
 }
 
@@ -400,6 +416,13 @@ float getSensorPH()
 
   pH = round(pH * 100) / 100.0; // Round to 2 decimal places
   return pH;                    // Return as float
+}
+
+int readMappedSensor(int pin, int outMin, int outMax)
+{
+  int raw = analogRead(pin);
+  int mapped = map(raw, 0, 4095, outMin, outMax);
+  return constrain(mapped, outMin, outMax);
 }
 
 void callback(char *topic, byte *payload, unsigned int length)

@@ -48,6 +48,59 @@ function App() {
   const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
   const ws = useRef(null);
 
+  const sensors = [
+    { key: 'pH', label: 'pH', unit: '', min: 0, max: 14 },
+    {
+      key: 'DO',
+      label: 'Oksigen Terlarut (DO)',
+      unit: 'mg/L',
+      min: 0,
+      max: 15,
+    },
+    {
+      key: 'BOD',
+      label: 'Kebutuhan Oksigen Biologi (BOD)',
+      unit: 'mg/L',
+      min: 0,
+      max: 50,
+    },
+    {
+      key: 'COD',
+      label: 'Kebutuhan Oksigen Kimiawi (COD)',
+      unit: 'mg/L',
+      min: 0,
+      max: 100,
+    },
+    {
+      key: 'TSS',
+      label: 'Padatan Tersuspensi Total (TSS)',
+      unit: 'mg/L',
+      min: 0,
+      max: 500,
+    },
+    {
+      key: 'nitrat',
+      label: 'Nitrat (NO3-N)',
+      unit: 'mg/L',
+      min: 0,
+      max: 10,
+    },
+    {
+      key: 'fosfat',
+      label: 'Total Fosfat (T-Phosphat)',
+      unit: 'mg/L',
+      min: 0,
+      max: 10,
+    },
+    {
+      key: 'fecal_coliform',
+      label: 'Fecal Coliform',
+      unit: 'MPN/100mL',
+      min: 0,
+      max: 1000,
+    },
+  ];
+
   // WebSocket logic to receive sensor data
   // WebSocket logic to receive sensor data
   useEffect(() => {
@@ -197,162 +250,127 @@ function App() {
   }
 
   return (
-    <div className='container mx-auto px-4'>
-      <Card className='my-4 shadow-lg bg-white rounded-lg'>
-        <CardHeader className='pb-0'>
-          <CardTitle className='text-lg font-semibold text-gray-800 text-center'>
-            Kualitas Air
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='flex flex-col justify-center py-0'>
-          {/* Wrap the chart within ChartContainer */}
-          <ChartContainer config={{ color: 'hsl(var(--chart-1))' }}>
-            <div className='w-full h-full'>
-              <ResponsiveContainer>
-                <LineChart
-                  data={IPjData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray='3 3' />
-                  <XAxis
-                    dataKey='time'
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={30}
-                  />
-                  <Tooltip content={<ChartTooltipContent hideLabel />} />
-                  <Line
-                    type='monotone'
-                    dataKey='IPj'
-                    stroke='#8884d8'
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartContainer>
-          <strong className='flex mx-auto text-sm mt-2'>
-            {IPj.toFixed(2)}
-          </strong>
-        </CardContent>
-        <CardContent className='flex flex-col items-center'>
-          <Badge variant={badgeColor} className='my-2 text-sm'>
-            <strong>{waterQuality}</strong>
+    <div className='min-h-screen bg-slate-50'>
+      <div className='mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 lg:px-8'>
+        <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <div>
+            <h1 className='text-xl font-bold text-slate-800 sm:text-2xl'>
+              IoT Monitoring Kualitas Air
+            </h1>
+            <p className='text-xs text-slate-500 sm:text-sm'>
+              Monitoring real-time dan kontrol sensor manual/server
+            </p>
+          </div>
+          <Badge variant={isConnected ? 'success' : 'destructive'}>
+            {isConnected ? 'WebSocket Connected' : 'WebSocket Disconnected'}
           </Badge>
-          <p className='text-sm text-gray-600 text-center px-4'>{desk}</p>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Slider layout for each sensor */}
-      <div className='grid grid-cols-2 gap-4 my-4'>
-        {[
-          { key: 'pH', label: 'pH', unit: '', min: 0, max: 14 },
-          {
-            key: 'DO',
-            label: 'Oksigen Terlarut (DO)',
-            unit: 'mg/L',
-            min: 0,
-            max: 15,
-          },
-          {
-            key: 'BOD',
-            label: 'Kebutuhan Oksigen Biologi (BOD)',
-            unit: 'mg/L',
-            min: 0,
-            max: 50,
-          },
-          {
-            key: 'COD',
-            label: 'Kebutuhan Oksigen Kimiawi (COD)',
-            unit: 'mg/L',
-            min: 0,
-            max: 100,
-          },
-          {
-            key: 'TSS',
-            label: 'Padatan Tersuspensi Total (TSS)',
-            unit: 'mg/L',
-            min: 0,
-            max: 500,
-          },
-          {
-            key: 'nitrat',
-            label: 'Nitrat (NO3-N)',
-            unit: 'mg/L',
-            min: 0,
-            max: 10,
-          },
-          {
-            key: 'fosfat',
-            label: 'Total Fosfat (T-Phosphat)',
-            unit: 'mg/L',
-            min: 0,
-            max: 10,
-          },
-          {
-            key: 'fecal_coliform',
-            label: 'Fecal Coliform',
-            unit: 'MPN/100mL',
-            min: 0,
-            max: 1000,
-          },
-        ].map(({ key, label, unit, min, max }) => (
-          <Card
-            key={key}
-            className={`relative ${useServer[key] ? 'bg-gray-200' : 'bg-white'}`}
-          >
-            <CardHeader>
-              <CardTitle className='text-sm text-gray-700'>{label}</CardTitle>
-            </CardHeader>
-            <CardContent className='flex flex-col items-center justify-center mb-12'>
-              {!useServer[key] ? (
-                <>
-                  <p className='text-center text-xl font-semibold'>
-                    {sliderData[key]} {unit}
+        <Card className='mb-4 rounded-lg bg-white shadow-lg'>
+          <CardHeader className='pb-0'>
+            <CardTitle className='text-center text-lg font-semibold text-gray-800'>
+              Kualitas Air
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='flex flex-col justify-center py-0'>
+            <ChartContainer config={{ color: 'hsl(var(--chart-1))' }}>
+              <div className='h-[220px] w-full sm:h-[280px]'>
+                <ResponsiveContainer width='100%' height='100%'>
+                  <LineChart
+                    data={IPjData}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray='3 3' />
+                    <XAxis
+                      dataKey='time'
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={30}
+                    />
+                    <Tooltip content={<ChartTooltipContent hideLabel />} />
+                    <Line
+                      type='monotone'
+                      dataKey='IPj'
+                      stroke='#8884d8'
+                      strokeWidth={2}
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartContainer>
+            <strong className='mx-auto mt-2 flex text-sm sm:text-base'>
+              {IPj.toFixed(2)}
+            </strong>
+          </CardContent>
+          <CardContent className='flex flex-col items-center pb-5'>
+            <Badge variant={badgeColor} className='my-2 text-sm'>
+              <strong>{waterQuality}</strong>
+            </Badge>
+            <p className='px-4 text-center text-sm text-gray-600'>{desk}</p>
+          </CardContent>
+        </Card>
+
+        <div className='my-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+          {sensors.map(({ key, label, unit, min, max }) => (
+            <Card
+              key={key}
+              className={`${useServer[key] ? 'bg-gray-100' : 'bg-white'} border-slate-200`}
+            >
+              <CardHeader>
+                <CardTitle className='text-sm text-gray-700'>{label}</CardTitle>
+              </CardHeader>
+              <CardContent className='flex min-h-[140px] flex-col items-center justify-center'>
+                {!useServer[key] ? (
+                  <>
+                    <p className='text-center text-lg font-semibold sm:text-xl'>
+                      {sliderData[key]} {unit}
+                    </p>
+                    <Slider
+                      value={[sliderData[key]]}
+                      onValueChange={(value) => {
+                        setSliderData((prev) => {
+                          const newSliderData = { ...prev, [key]: value[0] };
+                          if (!useServer[key]) {
+                            sendSliderValue(key, value[0]);
+                          }
+                          return newSliderData;
+                        });
+                      }}
+                      min={min}
+                      max={max}
+                      step={0.1}
+                      className='mt-4 w-full'
+                    />
+                  </>
+                ) : (
+                  <p className='text-center text-lg font-semibold sm:text-xl'>
+                    {sensorData ? `${sensorData[key]} ${unit}` : 'Loading...'}
                   </p>
-                  <Slider
-                    value={[sliderData[key]]}
-                    onValueChange={(value) => {
-                      setSliderData((prev) => {
-                        const newSliderData = { ...prev, [key]: value[0] }; // Update slider value locally
-                        if (!useServer[key]) {
-                          // If useServer is false, send updated value to server
-                          sendSliderValue(key, value[0]); // Send the new value
-                        }
-                        return newSliderData; // Return updated slider state
-                      });
-                    }}
-                    min={min}
-                    max={max}
-                    step={0.1} // Optional: Adjust the step size for slider movement
-                    className='w-full mt-4'
-                  />
-                </>
-              ) : (
-                <p className='text-center text-xl font-semibold'>
-                  {sensorData ? `${sensorData[key]} ${unit}` : 'Loading...'}
-                </p>
-              )}
-            </CardContent>
-            <CardFooter className='absolute bottom-2 left-2 flex items-center p-2'>
-              <Switch
-                checked={!useServer[key]}
-                onCheckedChange={(value) => {
-                  setUseServer((prev) => ({ ...prev, [key]: !value }));
-                  sendSwitchData(key, !value);
-                }}
-              />
-            </CardFooter>
-          </Card>
-        ))}
+                )}
+              </CardContent>
+              <CardFooter className='flex items-center justify-between border-t px-4 py-3'>
+                <span className='text-xs text-slate-500'>
+                  {useServer[key] ? 'Mode Server' : 'Mode Manual'}
+                </span>
+                <Switch
+                  checked={!useServer[key]}
+                  onCheckedChange={(value) => {
+                    setUseServer((prev) => ({ ...prev, [key]: !value }));
+                    sendSwitchData(key, !value);
+                  }}
+                />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

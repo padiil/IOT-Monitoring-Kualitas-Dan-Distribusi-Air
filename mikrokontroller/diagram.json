@@ -4,79 +4,367 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "wokwi-breadboard-mini",
-      "id": "bb1",
-      "top": -421.5,
-      "left": -1311.7,
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": -184.06,
+      "left": 51.7,
       "rotate": 90,
       "attrs": {}
     },
     {
-      "type": "board-esp32-devkit-c-v4",
-      "id": "esp",
-      "top": -691.2,
-      "left": -1281.56,
+      "type": "wokwi-breadboard",
+      "id": "bb1",
+      "top": -166.2,
+      "left": -688.4,
       "attrs": {}
     },
     {
       "type": "wokwi-potentiometer",
-      "id": "temperature",
-      "top": -682.9,
-      "left": -1056.2,
-      "attrs": {}
+      "id": "pot_ph",
+      "top": -410,
+      "left": -700,
+      "attrs": {
+        "label": "pH (34)"
+      }
     },
-    { "type": "wokwi-potentiometer", "id": "pH", "top": -682.9, "left": -950.6, "attrs": {} },
-    { "type": "wokwi-potentiometer", "id": "turbidity", "top": -682.9, "left": -845, "attrs": {} },
     {
       "type": "wokwi-potentiometer",
-      "id": "conductivity",
-      "top": -682.9,
-      "left": -739.4,
-      "attrs": {}
+      "id": "pot_do",
+      "top": -410,
+      "left": -560,
+      "attrs": {
+        "label": "DO (35)"
+      }
     },
-    { "type": "wokwi-potentiometer", "id": "tds", "top": -682.9, "left": -633.8, "attrs": {} },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_bod",
+      "top": -410,
+      "left": -420,
+      "attrs": {
+        "label": "BOD (32)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_tss",
+      "top": -410,
+      "left": -280,
+      "attrs": {
+        "label": "TSS (33)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_temp",
+      "top": -410,
+      "left": -140,
+      "attrs": {
+        "label": "Temp (39)"
+      }
+    },
     {
       "type": "wokwi-lcd1602",
       "id": "lcd1",
-      "top": -713.6,
-      "left": -1655.2,
-      "attrs": { "pins": "i2c", "background": "blue" }
+      "top": 83.2,
+      "left": -196,
+      "attrs": {
+        "pins": "i2c",
+        "background": "blue"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo_comm",
+      "top": 94,
+      "left": -672,
+      "attrs": {
+        "label": "Comm Gate (18)"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo_treat",
+      "top": 94,
+      "left": -460.8,
+      "attrs": {
+        "label": "Treat Gate (19)"
+      }
     }
   ],
   "connections": [
-    [ "esp:TX", "$serialMonitor:RX", "", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "", [] ],
-    [ "esp:GND.3", "bb1:1t.a", "black", [ "h0" ] ],
-    [ "esp:5V", "bb1:1b.j", "red", [ "h0" ] ],
-    [ "temperature:GND", "bb1:2t.a", "black", [ "v0" ] ],
-    [ "pH:GND", "bb1:3t.a", "black", [ "v0" ] ],
-    [ "turbidity:GND", "bb1:4t.a", "black", [ "v211.2", "h-355.2" ] ],
-    [ "conductivity:GND", "bb1:5t.a", "black", [ "v220.8", "h-460.8" ] ],
-    [ "tds:GND", "bb1:6t.a", "black", [ "v230.4", "h-566.4" ] ],
-    [ "tds:VCC", "bb1:2b.j", "red", [ "v403.2", "h-768.8", "v-211.2" ] ],
-    [ "conductivity:VCC", "bb1:3b.j", "red", [ "v393.6", "h-653.6", "v-192" ] ],
-    [ "turbidity:VCC", "bb1:4b.j", "red", [ "v384", "h-538.4", "v-172.8" ] ],
-    [ "pH:VCC", "bb1:5b.j", "red", [ "v374.4", "h-423.2", "v-153.6" ] ],
-    [ "temperature:VCC", "bb1:6b.j", "red", [ "v364.8", "h-308", "v-134.4" ] ],
-    [ "temperature:SIG", "esp:4", "green", [ "v0" ] ],
-    [ "pH:SIG", "esp:34", "green", [ "v57.6", "h-250", "v-163.2", "h-124.8", "v96" ] ],
-    [ "esp:35", "turbidity:SIG", "green", [ "h-19.05", "v-115.2", "h144", "v192", "h346" ] ],
     [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "bb1:tp.1",
+      "bb1:bp.1",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "bb1:tn.1",
+      "bb1:bn.1",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:5V",
+      "bb1:tp.25",
+      "red",
+      [
+        "v25",
+        "h-10"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "bb1:tn.25",
+      "black",
+      [
+        "v20",
+        "h20"
+      ]
+    ],
+    [
+      "pot_ph:VCC",
+      "bb1:tp.5",
+      "red",
+      [
+        "v40"
+      ]
+    ],
+    [
+      "pot_ph:GND",
+      "bb1:tn.5",
+      "black",
+      [
+        "v30"
+      ]
+    ],
+    [
+      "pot_ph:SIG",
+      "esp:34",
+      "green",
+      [
+        "v95",
+        "h220"
+      ]
+    ],
+    [
+      "pot_do:VCC",
+      "bb1:tp.15",
+      "red",
+      [
+        "v40"
+      ]
+    ],
+    [
+      "pot_do:GND",
+      "bb1:tn.15",
+      "black",
+      [
+        "v30"
+      ]
+    ],
+    [
+      "pot_do:SIG",
+      "esp:35",
+      "green",
+      [
+        "v85",
+        "h150"
+      ]
+    ],
+    [
+      "pot_bod:VCC",
+      "bb1:tp.25",
+      "red",
+      [
+        "v40"
+      ]
+    ],
+    [
+      "pot_bod:GND",
+      "bb1:tn.25",
+      "black",
+      [
+        "v30"
+      ]
+    ],
+    [
+      "pot_bod:SIG",
       "esp:32",
-      "conductivity:SIG",
       "green",
-      [ "h-28.65", "v-57.6", "h0", "v-76.8", "h163.2", "v211.2", "h268.8", "v0", "h172.8" ]
+      [
+        "v75",
+        "h80"
+      ]
     ],
     [
-      "esp:33",
-      "tds:SIG",
-      "green",
-      [ "h-38.25", "v-153.6", "h182.4", "v230.4", "h144", "v0", "h393.6" ]
+      "pot_tss:VCC",
+      "bb1:tp.35",
+      "red",
+      [
+        "v40"
+      ]
     ],
-    [ "lcd1:VCC", "bb1:7b.j", "red", [ "h-28.8", "v297.7", "h403.2" ] ],
-    [ "lcd1:GND", "bb1:7t.a", "black", [ "h-38.4", "v480", "h547.2", "v-172.8" ] ],
-    [ "esp:21", "lcd1:SDA", "yellow", [ "h57.6", "v153.6", "h-547.2", "v-201.8" ] ],
-    [ "esp:22", "lcd1:SCL", "yellow", [ "h67.2", "v192", "h-547.2", "v-201.9" ] ]
+    [
+      "pot_tss:GND",
+      "bb1:tn.35",
+      "black",
+      [
+        "v30"
+      ]
+    ],
+    [
+      "pot_tss:SIG",
+      "esp:33",
+      "green",
+      [
+        "v65",
+        "h10"
+      ]
+    ],
+    [
+      "pot_temp:VCC",
+      "bb1:tp.45",
+      "red",
+      [
+        "v40"
+      ]
+    ],
+    [
+      "pot_temp:GND",
+      "bb1:tn.45",
+      "black",
+      [
+        "v30"
+      ]
+    ],
+    [
+      "pot_temp:SIG",
+      "esp:39",
+      "green",
+      [
+        "v105",
+        "h-170",
+        "v120"
+      ]
+    ],
+    [
+      "lcd1:VCC",
+      "bb1:tp.2",
+      "red",
+      [
+        "h-38.4",
+        "v-47.9",
+        "h-402.4"
+      ]
+    ],
+    [
+      "lcd1:GND",
+      "bb1:tn.2",
+      "black",
+      [
+        "h-28.8",
+        "v-48",
+        "h-412"
+      ]
+    ],
+    [
+      "lcd1:SDA",
+      "esp:21",
+      "yellow",
+      [
+        "h-9.6",
+        "v-70",
+        "h307.2"
+      ]
+    ],
+    [
+      "lcd1:SCL",
+      "esp:22",
+      "yellow",
+      [
+        "h-19.2",
+        "v-90",
+        "h316.8"
+      ]
+    ],
+    [
+      "servo_comm:V+",
+      "esp:5V",
+      "red",
+      [
+        "h-20",
+        "v-120",
+        "h760"
+      ]
+    ],
+    [
+      "servo_comm:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "h-10",
+        "v-95",
+        "h730"
+      ]
+    ],
+    [
+      "servo_comm:PWM",
+      "esp:18",
+      "orange",
+      [
+        "h-30",
+        "v-145",
+        "h806"
+      ]
+    ],
+    [
+      "servo_treat:V+",
+      "esp:5V",
+      "red",
+      [
+        "h-20",
+        "v-85",
+        "h535"
+      ]
+    ],
+    [
+      "servo_treat:GND",
+      "esp:GND.2",
+      "black",
+      [
+        "h-10",
+        "v-65",
+        "h505"
+      ]
+    ],
+    [
+      "servo_treat:PWM",
+      "esp:19",
+      "orange",
+      [
+        "h-10",
+        "v-170",
+        "h586"
+      ]
+    ]
   ],
   "dependencies": {}
 }
